@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2A47">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>AtMA 2026 · Nashville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;600;700;800&family=Source+Serif+4:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+  :root{
+    /* Palette drawn from the Atlantic Marketing Association logo (navy nautical blues)
+       plus companion sea teal and sand gold accents for room coding. */
+    --bg:#F7F4EB;
+    --card:#FFFFFF;
+    --tint:#F1EBDC;
+    --ink:#152B40;
+    --ink-soft:#5A6B7C;
+    --line:#E2DBC8;
+    --navy:#1E4468;
+    --blue:#2E77AC;
+    --teal:#1F8A7D;
+    --gold:#9A6E10;
+    --gold-bright:#F2B234;
+    --grey:#8C8574;
+    /* The AtMA site theme font is set inside Weebly files that automated tools
+       cannot open, so the family below is the one line to change if the board
+       standardizes on a specific typeface. */
+    --brand:"Libre Franklin","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --utility:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--utility);
+    font-size:16px;line-height:1.5;
+    padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:660px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+
+  /* ---------- Masthead ---------- */
+  header.bill{
+    position:relative;overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 85% -10%, rgba(242,178,52,.20) 0%, rgba(242,178,52,0) 55%),
+      linear-gradient(160deg,#0F2A47 0%, var(--navy) 55%, #2B5E93 100%);
+    color:#fff;text-align:center;padding:24px 16px 46px;
+  }
+  .bill .inner{position:relative;z-index:1}
+  .logobox{
+    display:inline-flex;align-items:center;justify-content:center;
+    background:#fff;border:3px solid var(--gold-bright);border-radius:14px;
+    padding:8px 16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(6,20,38,.45);
+  }
+  .logobox .logo{height:60px;max-width:70vw;object-fit:contain;display:block}
+  .logobox .monogram{display:none;font-family:var(--brand);font-weight:800;font-size:26px;letter-spacing:.01em;color:var(--navy);line-height:1.1;padding:4px 6px}
+  .logobox .monogram::after{content:"";display:block;height:3px;border-radius:2px;background:var(--gold-bright);margin-top:4px}
+  .logobox.noimg .logo{display:none}
+  .logobox.noimg .monogram{display:block}
+  .bill .assoc{font-family:var(--brand);font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-size:11.5px;color:#C9DCEE}
+  .bill h1{
+    font-family:var(--brand);font-weight:800;
+    font-size:clamp(26px,7vw,34px);line-height:1.12;letter-spacing:.01em;margin:5px 0 6px;color:#fff;
+    text-shadow:0 1px 2px rgba(6,20,38,.35);
+  }
+  .bill .dates{font-family:var(--brand);font-weight:600;font-size:13.5px;color:#F5D98F}
+  .bill .waves{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:64px;pointer-events:none;display:block}
+
+  /* ---------- Sticky controls ---------- */
+  .controls{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0 10px;box-shadow:0 8px 16px -14px rgba(21,43,64,.45)}
+  .daytabs{display:flex;gap:8px}
+  .daytab{
+    flex:1;border:1px solid var(--line);background:var(--card);color:var(--ink);
+    font-family:var(--brand);cursor:pointer;
+    padding:7px 2px 6px;text-align:center;border-radius:10px;
+  }
+  .daytab .d{font-weight:700;font-size:14.5px;letter-spacing:.02em;display:block;line-height:1.1}
+  .daytab .n{font-weight:500;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);display:block;margin-top:2px}
+  .daytab.on{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:inset 0 3px 0 var(--gold-bright)}
+  .daytab.on .n{color:#BCD2E4}
+  .searchrow{display:flex;gap:8px;margin-top:9px}
+  .searchrow input{
+    flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;
+    padding:9px 12px;font:15px var(--utility);color:var(--ink);
+  }
+  .searchrow input::placeholder{color:#93A3B2}
+  .searchrow input:focus{outline:2px solid var(--blue);outline-offset:1px}
+  .roomchips{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .chip{
+    border:1px solid var(--line);background:var(--card);border-radius:999px;cursor:pointer;
+    font-family:var(--brand);font-weight:600;letter-spacing:.03em;
+    font-size:12px;padding:5px 12px;color:var(--ink-soft);
+  }
+  .chip::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--grey);vertical-align:1px}
+  .chip.all::before{display:none}
+  .chip.rA::before{background:var(--blue)}
+  .chip.rB::before{background:var(--teal)}
+  .chip.rC::before{background:var(--gold)}
+  .chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+  /* ---------- Session cards ---------- */
+  .dayhead{font-family:var(--brand);font-weight:700;letter-spacing:.02em;font-size:14px;color:var(--ink-soft);margin:18px 2px 8px}
+  .timehead{display:flex;align-items:center;gap:10px;margin:20px 2px 9px}
+  .timehead .t{font-family:var(--brand);font-weight:700;letter-spacing:.04em;font-size:13.5px;color:var(--navy);white-space:nowrap;text-transform:uppercase}
+  .timehead .l{flex:1;border-top:1px solid var(--line)}
+  .timehead .t::before{content:"";display:inline-block;width:8px;height:8px;background:var(--gold-bright);border-radius:2px;margin-right:8px;transform:rotate(45deg)}
+  .timehead .c{font-family:var(--brand);font-weight:600;font-size:11px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase;white-space:nowrap}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-left:4px solid var(--grey);
+    border-radius:12px;margin:0 0 10px;padding:13px 14px;position:relative;
+    box-shadow:0 1px 2px rgba(21,43,64,.06);
+  }
+  .card.rA{border-left-color:var(--blue)}
+  .card.rB{border-left-color:var(--teal)}
+  .card.rC{border-left-color:var(--gold)}
+  .card .toprow{display:flex;align-items:flex-start;gap:8px}
+  .card .code{font-family:var(--brand);font-weight:700;font-size:12px;letter-spacing:.05em;color:var(--ink-soft);text-transform:uppercase}
+  .codechip{display:inline-block;background:var(--tint);color:var(--navy);font-weight:800;font-size:10.5px;letter-spacing:.06em;padding:2px 8px;border-radius:6px;margin-right:4px;vertical-align:1px}
+  .card.rA .codechip{background:rgba(46,119,172,.14);color:var(--blue)}
+  .card.rB .codechip{background:rgba(31,138,125,.14);color:var(--teal)}
+  .card.rC .codechip{background:rgba(242,178,52,.20);color:var(--gold)}
+  .card h3{font-family:var(--serif);font-weight:700;font-size:17.5px;line-height:1.3;margin:3px 0 5px;flex:1}
+  .card .meta{font-family:var(--brand);font-weight:600;letter-spacing:.03em;font-size:12px;color:var(--ink-soft)}
+  .card .meta .room{font-weight:700}
+  .card.rA .room{color:var(--blue)} .card.rB .room{color:var(--teal)} .card.rC .room{color:var(--gold)}
+  .nowtag{display:inline-block;background:var(--gold-bright);color:var(--navy);font-family:var(--brand);font-weight:800;font-size:10px;letter-spacing:.1em;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+  .star{
+    border:none;background:none;cursor:pointer;font-size:24px;line-height:1;color:#B9C6D2;
+    padding:2px 2px 2px 8px;flex:none;
+  }
+  .star[aria-pressed="true"]{color:var(--gold-bright)}
+  .star:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+  .expander{
+    margin-top:8px;border:none;background:none;cursor:pointer;color:var(--blue);
+    font-family:var(--brand);font-weight:700;letter-spacing:.04em;font-size:12.5px;padding:2px 0;
+  }
+  .expander:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .papers{margin-top:9px;border-top:1px solid var(--line);padding-top:4px}
+  .paper{padding:9px 0;border-bottom:1px solid var(--tint)}
+  .paper:last-child{border-bottom:none}
+  .paper .pt{font-family:var(--serif);font-weight:700;font-size:15.5px;line-height:1.35}
+  .paper .pa{font-size:13px;color:var(--ink-soft);margin-top:3px;line-height:1.45}
+  .paper .ps{font-family:var(--brand);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:10px;color:#6B7C8C;margin-top:4px}
+  .evt{background:var(--tint);border-style:solid;border-color:var(--line);border-left:4px solid var(--grey)}
+  .empty{
+    border:1.5px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;color:var(--ink-soft);
+    font-family:var(--utility);font-size:15px;margin-top:16px;background:var(--card)
+  }
+  .btn{
+    display:inline-block;border:1px solid var(--navy);background:linear-gradient(180deg,#28547E 0%,var(--navy) 100%);color:#fff;
+    font-family:var(--brand);font-weight:700;letter-spacing:.04em;
+    font-size:13px;padding:10px 16px;border-radius:10px;cursor:pointer;text-decoration:none;text-align:center;
+  }
+  .btn.ghost{background:var(--card);color:var(--navy)}
+  .btn:focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+  /* ---------- Section headings ---------- */
+  .sec{margin-top:26px}
+  .sec > h2{
+    font-family:var(--brand);font-weight:800;letter-spacing:.02em;color:var(--navy);
+    font-size:17px;border-bottom:2px solid var(--gold-bright);padding-bottom:5px;margin-bottom:10px
+  }
+  .note{font-size:13.5px;color:var(--ink-soft)}
+  .prose{font-family:var(--serif);font-size:16px;line-height:1.6}
+  .prose p{margin:0 0 12px}
+  .kv{margin:8px 0 0}
+  .kv .k{font-family:var(--brand);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;color:var(--blue)}
+  .kv .v{font-size:14.5px;margin:2px 0 11px}
+  a{color:var(--blue)}
+
+  /* ---------- Map ---------- */
+  .mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 6px 2px;margin-top:10px;box-shadow:0 1px 2px rgba(21,43,64,.06)}
+  .mapbox svg{width:100%;height:auto;display:block}
+  .poi-dot{cursor:pointer}
+  .poi-dot circle.halo{fill:transparent}
+  .poi-dot.sel circle.core{stroke:var(--gold-bright);stroke-width:3}
+  .legend{list-style:none;margin-top:10px}
+  .legend li{display:flex;gap:10px;align-items:baseline;padding:8px 4px;border-bottom:1px solid var(--tint);cursor:pointer}
+  .legend li:last-child{border-bottom:none}
+  .legend .num{
+    flex:none;width:20px;height:20px;border-radius:50%;color:#fff;text-align:center;
+    font-family:var(--brand);font-weight:700;font-size:11.5px;line-height:20px;transform:translateY(3px)
+  }
+  .legend .nm{font-family:var(--serif);font-weight:700;font-size:15.5px}
+  .legend .ds{font-family:var(--brand);font-weight:600;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);margin-left:auto;white-space:nowrap}
+  .poicard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:13px;margin-top:10px;box-shadow:0 1px 2px rgba(21,43,64,.06)}
+  .poicard h3{font-family:var(--serif);font-size:17px}
+  .poicard .cat{font-family:var(--brand);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:10.5px;color:var(--ink-soft)}
+  .poicard p{font-size:14px;margin-top:5px}
+  .roomguide .rg{padding:9px 2px;border-bottom:1px solid var(--tint)}
+  .roomguide .rg:last-child{border-bottom:none}
+  .roomguide .rn{font-family:var(--serif);font-weight:700;font-size:15.5px}
+  .roomguide .ru{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+
+  /* ---------- Now banner + star animation ---------- */
+  .nownext{
+    background:linear-gradient(135deg,var(--navy) 0%,#2B5E93 100%);color:#fff;border-radius:12px;
+    padding:11px 14px;margin:12px 0 2px;font-family:var(--brand);font-weight:600;font-size:13px;
+    box-shadow:0 3px 10px rgba(15,42,71,.28);cursor:pointer;
+  }
+  .nn-k{background:var(--gold-bright);color:var(--navy);font-weight:800;font-size:10px;letter-spacing:.08em;border-radius:999px;padding:2px 9px;margin-right:8px;text-transform:uppercase;vertical-align:1px}
+  @media (prefers-reduced-motion:no-preference){
+    @keyframes starpop{0%{transform:scale(1)}45%{transform:scale(1.4) rotate(8deg)}100%{transform:scale(1)}}
+    .star.pop{animation:starpop .32s ease}
+    .daytab,.chip,.btn{transition:transform .08s ease}
+    .daytab:active,.chip:active,.btn:active{transform:scale(.97)}
+  }
+
+  /* ---------- Live map markers ---------- */
+  #liveMap{height:380px;background:var(--tint)}
+  .lm-pin{
+    width:26px;height:26px;border-radius:50%;color:#fff;text-align:center;
+    font-family:var(--brand);font-weight:700;font-size:12.5px;line-height:23px;
+    border:2px solid #fff;box-shadow:0 1px 4px rgba(21,43,64,.45);
+  }
+  .lm-star{
+    width:30px;height:30px;border-radius:50%;background:var(--gold-bright);color:var(--navy);
+    font-size:16px;line-height:27px;text-align:center;
+    border:2px solid #fff;box-shadow:0 1px 4px rgba(21,43,64,.5);
+  }
+  .leaflet-popup-content{font-family:var(--utility);font-size:13.5px;line-height:1.45;margin:10px 13px}
+  .leaflet-popup-content-wrapper{border-radius:10px}
+  .leaflet-container a.gm{color:var(--blue);font-weight:600}
+
+  /* ---------- Board ---------- */
+  .board .msg{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .board .who{font-family:var(--brand);font-weight:700;font-size:12.5px;color:var(--navy)}
+  .board .when{font-size:11px;color:#6B7C8C;margin-left:6px;font-family:var(--utility)}
+  .board .txt{font-size:14.5px;margin-top:3px;white-space:pre-wrap;word-wrap:break-word}
+  .board input,.board textarea{
+    width:100%;border:1px solid var(--line);background:var(--card);border-radius:10px;
+    padding:9px 12px;font:14.5px var(--utility);color:var(--ink);margin-bottom:8px
+  }
+  .board textarea{min-height:70px;resize:vertical}
+  .board input:focus,.board textarea:focus{outline:2px solid var(--blue);outline-offset:1px}
+
+  /* ---------- Bottom nav ---------- */
+  nav.tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--navy);
+    padding-bottom:env(safe-area-inset-bottom);border-top:3px solid var(--gold-bright);
+  }
+  nav.tabs .in{max-width:660px;margin:0 auto;display:flex}
+  nav.tabs button{
+    flex:1;background:none;border:none;color:#8FA9C0;cursor:pointer;padding:9px 0 8px;
+    font-family:var(--brand);font-weight:600;letter-spacing:.05em;font-size:10.5px;
+    display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;
+  }
+  nav.tabs button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  nav.tabs button.on{color:#fff}
+  nav.tabs button.on::after{content:"";position:absolute;top:-3px;left:22%;right:22%;height:3px;background:var(--gold-bright)}
+  nav.tabs button:focus-visible{outline:2px solid #fff;outline-offset:-3px}
+  .badge{
+    position:absolute;top:4px;right:calc(50% - 21px);background:var(--gold-bright);color:var(--navy);
+    border-radius:999px;font-size:9.5px;min-width:15px;height:15px;line-height:15px;padding:0 3px;font-family:var(--utility);font-weight:700
+  }
+  footer{margin:34px 0 8px;text-align:center;font-family:var(--brand);font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:10.5px;color:#6B7C8C}
+  .hide{display:none !important}
+  @media (prefers-reduced-motion:no-preference){
+    .card,.poicard{transition:box-shadow .15s ease}
+  }
+</style>
+</head>
+<body>
+<header class="bill" role="banner">
+  <div class="inner">
+    <div class="logobox"><img class="logo" src="https://www.atlanticmarketingassociation.com/uploads/1/3/3/7/133733174/atma-logo.png" alt="Atlantic Marketing Association logo" onerror="this.closest('.logobox').classList.add('noimg')"><div class="monogram" aria-hidden="true">AtMA</div></div>
+    <div class="assoc">Atlantic Marketing Association</div>
+    <h1>51st Annual Conference &middot; Nashville</h1>
+    <div class="dates">October 1 to 3, 2026 &middot; Drury Plaza Hotel Downtown</div>
+  </div>
+  <svg class="waves" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 34 C 60 18, 120 50, 200 36 S 340 18, 400 32 L 400 64 L 0 64 Z" fill="#F2B234" opacity="0.9"/>
+    <path d="M0 44 C 70 30, 140 56, 220 44 S 350 30, 400 42 L 400 64 L 0 64 Z" fill="#7FB2DC" opacity="0.45"/>
+    <path d="M0 54 C 80 44, 160 62, 240 52 S 360 44, 400 52 L 400 64 L 0 64 Z" fill="#F7F4EB" opacity="1"/>
+  </svg>
+</header>
+
+<div id="programControls" class="controls">
+  <div class="wrap">
+    <div class="daytabs" id="dayTabs" role="tablist" aria-label="Conference days"></div>
+    <div class="searchrow">
+      <input id="q" type="search" placeholder="Search sessions, papers, authors" aria-label="Search sessions, papers, and authors">
+    </div>
+    <div class="roomchips" id="roomChips" role="group" aria-label="Filter by room"></div>
+  </div>
+</div>
+
+<main class="wrap" id="view" tabindex="-1"></main>
+
+<footer class="wrap">51st AtMA &middot; Music City &middot; 2026</footer>
+
+<nav class="tabs" aria-label="Main">
+  <div class="in">
+    <button id="tab-program" class="on" aria-label="Program">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg>
+      Program
+    </button>
+    <button id="tab-agenda" aria-label="My agenda">
+      <svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.3l6.1-.7z"/></svg>
+      My Agenda
+      <span id="agendaBadge" class="badge hide">0</span>
+    </button>
+    <button id="tab-map" aria-label="Map">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.4-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.6-6.5 10-6.5 10z"/><circle cx="12" cy="11" r="2.4"/></svg>
+      Map
+    </button>
+    <button id="tab-info" aria-label="Info and connect">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 7.5v.5"/></svg>
+      Info
+    </button>
+  </div>
+</nav>
+
+<script>
+"use strict";
+/* =====================================================================
+   AtMA 2026 mobile program · built from the official draft program
+   ---------------------------------------------------------------------
+   ORGANIZER SETTINGS: edit the CONFIG block below, nothing else needs
+   to change. The full schedule lives in DATA at the bottom of this file.
+   ===================================================================== */
+const CONFIG = {
+  showEmails: false,               // set true to display author emails from the program
+  registrationUrl: "https://www.atlanticmarketingassociation.com/conference-registration.html",
+  conferenceUrl:  "https://www.atlanticmarketingassociation.com/2026-conference-in-nashville-tn.html",
+  googleFormUrl:  "",              // optional: link to a Google Form for RSVPs or check in
+  arcgisEmbedUrl: "",              // optional: paste an ArcGIS Online or StoryMaps embed URL
+  chatLinks: [
+    // Example: { label: "AtMA 2026 GroupMe", url: "https://groupme.com/join_group/..." }
+  ],
+  contacts: [
+    { role: "Program Chair", name: "Dr. Jianping (Coco) Huang", org: "Jacksonville State University", email: "jhuang@jsu.edu" },
+    { role: "Conference Registration", name: "Dr. Brian R. Kinard", org: "University of North Carolina Wilmington", email: "kinardb@uncw.edu" },
+    { role: "Webmaster", name: "Dr. Mark Sciuchetti", org: "Jacksonville State University", email: "msciuchetti@jsu.edu" }
+  ]
+};
+
+const DATA = {"days": [{"id": "wed", "date": "2026-09-30", "short": "Wed", "num": "Sep 30", "long": "Wednesday, September 30"}, {"id": "thu", "date": "2026-10-01", "short": "Thu", "num": "Oct 1", "long": "Thursday, October 1"}, {"id": "fri", "date": "2026-10-02", "short": "Fri", "num": "Oct 2", "long": "Friday, October 2"}, {"id": "sat", "date": "2026-10-03", "short": "Sat", "num": "Oct 3", "long": "Saturday, October 3"}], "sessions": [{"id": "w_reg", "day": "wed", "kind": "event", "code": null, "title": "Registration", "room": "South Pre-Function", "chair": null, "note": null, "start": "15:00", "end": "17:00", "startMin": 900, "endMin": 1020, "startLabel": "3:00 PM", "endLabel": "5:00 PM", "papers": [], "starrable": false}, {"id": "w_hosp", "day": "wed", "kind": "event", "code": null, "title": "Registration and Hospitality Suite", "room": "Granny White Boardroom", "chair": null, "note": "Light refreshments (beer, wine, soda) and snacks will be served.", "start": "19:00", "end": "22:00", "startMin": 1140, "endMin": 1320, "startLabel": "7:00 PM", "endLabel": "10:00 PM", "papers": [], "starrable": true}, {"id": "t_break", "day": "thu", "kind": "event", "code": "1.0", "title": "Welcome Breakfast", "room": null, "chair": null, "note": "Room to be announced. Complimentary buffet, designed for networking.", "start": "07:30", "end": "09:00", "startMin": 450, "endMin": 540, "startLabel": "7:30 AM", "endLabel": "9:00 AM", "papers": [], "starrable": true}, {"id": "t_reg", "day": "thu", "kind": "event", "code": null, "title": "Registration Desk", "room": "South Pre-Function", "chair": null, "note": null, "start": "07:30", "end": "13:00", "startMin": 450, "endMin": 780, "startLabel": "7:30 AM", "endLabel": "1:00 PM", "papers": [], "starrable": false}, {"id": "s11", "day": "thu", "kind": "session", "code": "1.1", "title": "Current Issues in Retail and Services Marketing", "room": "Belle Meade A", "chair": "Marko Grünhagen, Eastern Illinois University", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "The Impact of 2025 Tariffs on Retailer Inventory Levels", "a": [{"n": "Ahren Johnston", "af": "North Carolina A & T State University", "e": "ajohnston@ncat.edu"}], "sub": "1894"}, {"t": "Who Gets the Blame? Asymmetric Attribution in Third-Party Grocery Delivery", "a": [{"n": "Kirsten Passyn", "af": "The Citadel", "e": "kpassyn@citadel.edu"}, {"n": "Mark S. Rosenbaum", "af": "Citadel Military College of South Carolina", "e": "mrosenba@citadel.edu"}], "sub": "1899"}, {"t": "When Efficiency Undermines Experience: The Paradox of Automation in Customer Co-Creation", "a": [{"n": "Kamrunnahar Happy", "af": "Missouri State University", "e": "kh736s@MissouriState.edu"}, {"n": "Ismet Anitsal", "af": "Missouri State University", "e": "ianitsal@missouristate.edu"}, {"n": "Melek Anitsal", "af": "Tennessee Tech University", "e": "manitsal@tntech.edu"}], "sub": "1879"}], "starrable": true}, {"id": "s12", "day": "thu", "kind": "session", "code": "1.2", "title": "Innovative Frameworks and Advanced Learning Applications", "room": "Belle Meade B", "chair": "Stephen Carlson, Piedmont University", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "Experiential Learning in Advertising Education: How Biometric Feedback Influences Student Learning in Community-Based Classroom Partnerships", "a": [{"n": "Mark J. Sciuchetti Jr.", "af": "Jacksonville State University", "e": "msciuchetti@jsu.edu"}, {"n": "Jianping Huang", "af": "Jacksonville State University", "e": "jhuang@jsu.edu"}], "sub": "1904"}, {"t": "Strategic Advantage, Competitive Advantage, and Actionability in Retail Marketing and Management", "a": [{"n": "Stephen Carlson", "af": "Piedmont University", "e": "scarlson@piedmont.edu"}], "sub": "1887"}], "starrable": true}, {"id": "s13", "day": "thu", "kind": "session", "code": "1.3", "title": "Organizational Strategy, Leadership, and Workforce Performance", "room": "Charlotte", "chair": "To Be Announced", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "The Perilous Role of the Chief Marketing Officer; Position Turnover and Impact on Consumer Goods Organizations", "a": [{"n": "Douglas Brames", "af": "University of Florida", "e": "bramesdouglas@ufl.edu"}], "sub": "1913"}, {"t": "Exploring the Role of Occupations in Career Plateauing", "a": [{"n": "Brian R. Kinard", "af": "University of North Carolina - Wilmington", "e": "kinardb@uncw.edu"}, {"n": "Subhra Chakrabarty", "af": "Eastern Oregon University", "e": "schakrabarty@eou.edu"}], "sub": "1885"}, {"t": "Examining the Effects of Internal Branding Dimensions on Employee Recognition and Business Performance in the B2B Context", "a": [{"n": "Cansu Ergenç", "af": "Ankara Yıldırım Beyazıt University", "e": "cansuergenc@aybu.edu.tr"}, {"n": "Ali Ayci", "af": "Ankara Yıldırım Beyazıt University", "e": "aliayci@aybu.edu.tr"}, {"n": "Musa Pinar", "af": "Valparaiso University", "e": "Musa.Pinar@valpo.edu"}, {"n": "Faruk Guder", "af": "Loyola University Chicago", "e": "fguder@luc.edu"}, {"n": "İsmail Hatipoglu", "af": "Ministry of Treasury and Finance, Ankara, Türkiye", "e": "ilhanhatipoglu@hotmail.com"}], "sub": "1882"}, {"t": "The Mediating Effect of Job Content Plateauing on the Relationship Between Career Plateauing and Work Performance", "a": [{"n": "Brian R. Kinard", "af": "University of North Carolina - Wilmington", "e": "kinardb@uncw.edu"}, {"n": "Subhra Chakrabarty", "af": "Eastern Oregon University", "e": "schakrabarty@eou.edu"}], "sub": "1880"}], "starrable": true}, {"id": "s14", "day": "thu", "kind": "session", "code": "1.4", "title": "Health, Trust, and Consumer Behavior in Marketing", "room": "Belle Meade A", "chair": "Thomas Tanner, Commonwealth University - Bloomsburg", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Community Impact on Children’s Museums: A Case Study on Consumer Behavior & Target Markets", "a": [{"n": "Thomas Tanner", "af": "Commonwealth University - Bloomsburg", "e": "ttanner@commonwealthu.edu"}], "sub": "1889"}, {"t": "Digital Mental Health Information Seeking Through AI Chatbots: Examining Consumer Trust and Reliance", "a": [{"n": "Terry Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}, {"n": "Joe Cangelosi", "af": "University of Central Arkansas", "e": "joec@uca.edu"}], "sub": "1877"}, {"t": "Shifting the Lens: How Direct-to-Consumer Pharmaceutical Advertising Erodes Health Optimism and Undermines Preventive Health", "a": [{"n": "Sanjay Puligadda", "af": "Miami University - Oxford", "e": "puligsan@miamioh.edu"}, {"n": "Terry Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}, {"n": "Ethan Welyki", "af": "Miami University - Oxford", "e": "welykiet@miamioh.edu"}], "sub": "1895"}], "starrable": true}, {"id": "s15", "day": "thu", "kind": "session", "code": "1.5", "title": "Marketing Sustainability and Social Responsibility", "room": "Belle Meade B", "chair": "Shiyun Chen, Austin Peay State University", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Authenticity or Opportunism? Consumer Responses to Consistent vs. Inconsistent Corporate Sociopolitical Activism Messaging", "a": [{"n": "Whitney Ginder", "af": "Georgia College & State University", "e": "whitney.ginder@gcsu.edu"}, {"n": "Olivia Johnson", "af": "University of Houston - Main", "e": "ojohnson@Central.UH.EDU"}, {"n": "Ania Rynarzewska", "af": "Georgia College & State University", "e": "ania.rynarzewska@gmail.com"}, {"n": "Khirul Mim", "af": "University of Houston - Main", "e": "kmim@Central.UH.EDU"}], "sub": "1878"}, {"t": "Building a Bridge to Better Buying: Reimaging Marketing for Sustainable Consumption", "a": [{"n": "Emory Hiott", "af": null, "e": "ehiott@csuniv.edu"}], "sub": "1896"}, {"t": "Environmental Burden and Climate Issue Salience in At-Risk Urban Communities: An Exploratory Evaluation", "a": [{"n": "George Stone", "af": "North Carolina Agricultural and Technical State University", "e": "gwstone@ncat.edu"}, {"n": "Kirsten Passyn", "af": "The Citadel", "e": "kpassyn@citadel.edu"}], "sub": "1912"}, {"t": "Sustainability practices and consumer demand – a classification of secondhand business models shaping consumer behavior", "a": [{"n": "Anita Radon", "af": null, "e": "anita.radon@sh.se"}], "sub": "1921"}], "starrable": true}, {"id": "s16", "day": "thu", "kind": "session", "code": "1.6", "title": "Current Issues in Professional Sales and Sales Management", "room": "Charlotte", "chair": "Ismet Anitsal, Missouri State University & M. Meral Anitsal, Tennessee Tech University", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Leadership Behaviors, Supervisory Trust, and Career Satisfaction in B2B Sales", "a": [{"n": "James DeConinck", "af": "Western Carolina University", "e": "deconinck@wcu.edu"}, {"n": "Andrew Carnes", "af": "Western Carolina University", "e": "amcarnes@wcu.edu"}], "sub": "1870"}, {"t": "Retail Competition and Spatial Cannibalization: Sale and Traffic Evidence from the Entry of a New Starbucks in Anniston, Alabama", "a": [{"n": "Jianping Coco Huang", "af": "Jacksonville State University", "e": "jhuang@jsu.edu"}, {"n": "Mark J. Sciuchetti", "af": "Jacksonville State University", "e": "msciuchetti@jsu.edu"}], "sub": "1918"}], "starrable": true}, {"id": "t_hosp", "day": "thu", "kind": "event", "code": null, "title": "Registration and Hospitality Suite", "room": "Granny White Boardroom", "chair": null, "note": "Light refreshments (beer, wine, soda) and snacks will be served.", "start": "19:00", "end": "22:00", "startMin": 1140, "endMin": 1320, "startLabel": "7:00 PM", "endLabel": "10:00 PM", "papers": [], "starrable": true}, {"id": "f_break", "day": "fri", "kind": "event", "code": null, "title": "Breakfast", "room": null, "chair": null, "note": "Complimentary buffet breakfast.", "start": "07:30", "end": "09:00", "startMin": 450, "endMin": 540, "startLabel": "7:30 AM", "endLabel": "9:00 AM", "papers": [], "starrable": true}, {"id": "f_reg", "day": "fri", "kind": "event", "code": null, "title": "Registration Desk", "room": "South Pre-Function", "chair": null, "note": null, "start": "07:30", "end": "13:00", "startMin": 450, "endMin": 780, "startLabel": "7:30 AM", "endLabel": "1:00 PM", "papers": [], "starrable": false}, {"id": "s20", "day": "fri", "kind": "event", "code": "2.0", "title": "AtMA Board of Directors Meeting", "room": "Old Hickory", "chair": null, "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [], "starrable": true}, {"id": "s21", "day": "fri", "kind": "session", "code": "2.1", "title": "Communicating Identity, Values, and Inclusion in Organizations", "room": "Belle Meade A", "chair": "Elissa Shults, Western Carolina University", "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [{"t": "Beyond Selling: Identity-Based Promotion for Faith-Based Organizations", "a": [{"n": "Mark Borchert", "af": "Houghton College", "e": "mark.borchert@houghton.edu"}, {"n": "Elissa Shults", "af": "Western Carolina University", "e": "eshults@wcu.edu"}], "sub": "1906"}, {"t": "Diversity, Equity, and Inclusion in Companies’ Communications: A Framework-Based Review", "a": [{"n": "Whitney Ginder", "af": "Georgia College & State University", "e": "whitney.ginder@gcsu.edu"}, {"n": "Manveer Mann", "af": "Montclair State University", "e": "mannm@mail.montclair.edu"}, {"n": "Sang-Eun Byun", "af": "University of South Carolina", "e": "SBYUN@mailbox.sc.edu"}], "sub": "1873"}], "starrable": true}, {"id": "s22", "day": "fri", "kind": "session", "code": "2.2", "title": "Marketing Strategy, Experience, and Value Creation", "room": "Belle Meade B", "chair": "Kelly La Venture, Bemidji State University", "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [{"t": "From On-Site Activation to Digital Amplification: Measuring Experiential Tourism Marketing Impact for Rural Destination Marketing Organizations", "a": [{"n": "Kelly La Venture", "af": "Bemidji State University", "e": "kelly.laventure@bemidjistate.edu"}, {"n": "Kari Wood", "af": "Bemidji State University", "e": "kari.wood@bemidjistate.edu"}], "sub": "1902"}, {"t": "Best in Show Me the Money: Dog Show Photography Strategy and Value Capture", "a": [{"n": "Ashlyn C. Navis", "af": "The University of Tennessee, Knoxville", "e": "ashlynnavis@icloud.com"}], "sub": "1868"}, {"t": "When Love of Country Shapes Consumer Ethnocentrism: The Two Faces of Patriotism", "a": [{"n": "Vivek Madupu", "af": null, "e": "v.madupu@moreheadstate.edu"}], "sub": "1924"}], "starrable": true}, {"id": "s23", "day": "fri", "kind": "session", "code": "2.3", "title": "AI and Technology Adoption: Consumer and Employee Responses", "room": "Belle Meade A", "chair": "Mark J. Sciuchetti Jr., Jacksonville State University", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "Identifying the AI Benefits as Predictors of Recommending AI Tools: Mediating Role of Ethical Considerations", "a": [{"n": "Munise Hayrun Saglam", "af": "Yildiz Technical University, Turkey", "e": "mhsaglam@yildiz.edu.tr"}, {"n": "Musa Pinar", "af": "Valparaiso University", "e": "Musa.Pinar@valpo.edu"}, {"n": "Faruk Guder", "af": "Loyola University Chicago", "e": "fguder@luc.edu"}, {"n": "Haydar Çukurtepe", "af": "Valparaiso University", "e": "haydar.cukurtepe@valpo.edu"}, {"n": "Aysegul Yayimli", "af": "Valparaiso University", "e": "aysegul.yayimli@valpo.edu"}], "sub": "1903"}, {"t": "Artificial Intelligence and the Future of Customer-Oriented Work: Antecedents and Performance Implications", "a": [{"n": "Ceyhan Kilic", "af": "Tarleton State University", "e": "kilic@tarleton.edu"}, {"n": "Turkan Dursun-Kilic", "af": "West Texas A & M University", "e": "tkilic@wtamu.edu"}], "sub": "1900"}, {"t": "Beyond Inclusivity: The Role of Compatibility in Consumer Responses to Self-Service Retail Technologies", "a": [{"n": "Na Young Jung", "af": "University of Nebraska-Lincoln", "e": "njung3@unl.edu"}], "sub": "1867"}], "starrable": true}, {"id": "s24", "day": "fri", "kind": "session", "code": "2.4", "title": "Experiential Learning and Classroom Innovation", "room": "Belle Meade B", "chair": "Terry Damron, Austin Peay State University", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "Understanding Cultural Differences through Signaling on Corporate Websites: A Cross-disciplinary Experiential Learning Activity", "a": [{"n": "Terry Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}, {"n": "Achira Sedari Mudiyanselage", "af": "Austin Peay State University", "e": "sedarimudiyanselagea@apsu.edu"}, {"n": "Shiyun Chen", "af": "Austin Peay State University", "e": "chens@apsu.edu"}, {"n": "Bina Ajay", "af": "Sam Houston State University", "e": "binaajay@shsu.edu"}], "sub": "1909"}, {"t": "From Consumer Theory to Community Insight: A Service-Learning Pottery Studio Case", "a": [{"n": "Terry Stringer Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}, {"n": "Kathryn Woods", "af": "Austin Peay State University", "e": "woodsk@apsu.edu"}, {"n": "Yarlieliz Lopez Rodriguez", "af": "Austin Peay State University", "e": "ylopezrodriguez@students.apsu.edu"}, {"n": "Addison Travis", "af": "Austin Peay State University", "e": "atravis13@students.apsu.edu"}], "sub": "1875"}, {"t": "Rethinking Marketing Assessment: An Experiential Shift from Written Marketing Plans to Simulation-Based Learning in a Marketing Foundations Course", "a": [{"n": "Dayna Reed", "af": "Kennesaw State University", "e": "dreed66@kennesaw.edu"}], "sub": "1886"}], "starrable": true}, {"id": "s25", "day": "fri", "kind": "session", "code": "2.5", "title": "Media, Gamification, and Marketing Communication", "room": "Belle Meade A", "chair": "Mark J. Sciuchetti Jr., Jacksonville State University", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Playing the Web 3.0 Game: Gamification, Personalized Fan Interaction, and Performance Storytelling in College Sport Marketing", "a": [{"n": "Jianping Coco Huang", "af": "Jacksonville State University", "e": "jhuang@jsu.edu"}, {"n": "Cameron Barnes", "af": "Jacksonville State University", "e": "cdbarnes@jsu.edu"}], "sub": "1917"}, {"t": "The Use of Virtual Reality in Asynchronous Classes: A Case Study on Learning and Performance", "a": [{"n": "Thomas Tanner", "af": "Commonwealth University - Bloomsburg", "e": "ttanner@commonwealthu.edu"}, {"n": "Michael Huben", "af": "Commonwealth University - Bloomsburg", "e": "mhuben@bloomu.edu"}], "sub": "1890"}, {"t": "Symbolic Alignment and the Reconstruction of IMC in Algorithmic Communication Ecosystems", "a": [{"n": "Monisha Gupta", "af": "Marshall University", "e": "guptam@marshall.edu"}, {"n": "Holly Hapke", "af": "University of Kentucky", "e": "holly.hapke@uky.edu"}], "sub": "1910"}, {"t": "Touting the American Dream to Move Prospects Down the Path to Purchase Using a Conceptual Decision-Making Framework", "a": [{"n": "Casey H. Prentice", "af": "Old Dominion University", "e": "cprentic@odu.edu"}], "sub": "1871"}], "starrable": true}, {"id": "s26", "day": "fri", "kind": "session", "code": "2.6", "title": "Student Engagement, Motivation, and Success", "room": "Belle Meade B", "chair": "Michelle Carpenter, Old Dominion University", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Unveiling the Sparks: What Fuels Student Passion for University Performing Arts Centers?", "a": [{"n": "Mohammad M. Rahman", "af": "Shippensburg University of Pennsylvania", "e": "MMRahman@ship.edu"}, {"n": "Feisal Murshed", "af": "Kutztown University of Pennsylvania", "e": "murshed@kutztown.edu"}], "sub": "1883"}, {"t": "Gender, Engagement, and Assessment Design in Asynchronous Marketing Education", "a": [{"n": "Vivek Madupu", "af": "Morehead State University", "e": "v.madupu@moreheadstate.edu"}], "sub": "1922"}, {"t": "The Case for Industry Certifications in Higher Ed", "a": [{"n": "Michelle Christina Carpenter", "af": null, "e": "mcarpent@odu.edu"}], "sub": "1888"}], "starrable": true}, {"id": "s27", "day": "fri", "kind": "session", "code": "2.7", "title": "Social Media and Marketing Messaging", "room": "Charlotte", "chair": "Laura Boman, Kennesaw State University", "note": null, "start": "11:30", "end": "13:00", "startMin": 690, "endMin": 780, "startLabel": "11:30 AM", "endLabel": "1:00 PM", "papers": [{"t": "Beyond the Logo: Deconstruction Transparency as a Hard-to-Fake Quality Signal", "a": [{"n": "Kirsten Passyn", "af": "The Citadel", "e": "kpassyn@citadel.edu"}, {"n": "Mark S. Rosenbaum", "af": "Citadel Military College of South Carolina", "e": "mrosenba@citadel.edu"}], "sub": "1897"}, {"t": "From Clay to Community: Do Pottery Studio Instagram Reels Reflect the Experiential Benefits Consumers Value?", "a": [{"n": "Terry Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}], "sub": "1876"}], "starrable": true}, {"id": "f_lunch", "day": "fri", "kind": "event", "code": null, "title": "Atlantic Marketing Association Awards Luncheon", "room": "Guest Dining", "chair": null, "note": "Ryman Auditorium tour to follow the luncheon.", "start": "13:00", "end": "14:00", "startMin": 780, "endMin": 840, "startLabel": "1:00 PM", "endLabel": "2:00 PM", "papers": [], "starrable": true}, {"id": "f_hosp", "day": "fri", "kind": "event", "code": null, "title": "Registration and Hospitality Suite", "room": "Granny White Boardroom", "chair": null, "note": "Light refreshments (beer, wine, soda) and snacks will be served.", "start": "19:00", "end": "22:00", "startMin": 1140, "endMin": 1320, "startLabel": "7:00 PM", "endLabel": "10:00 PM", "papers": [], "starrable": true}, {"id": "sa_break", "day": "sat", "kind": "event", "code": null, "title": "Breakfast", "room": null, "chair": null, "note": "Complimentary buffet breakfast.", "start": "07:30", "end": "09:00", "startMin": 450, "endMin": 540, "startLabel": "7:30 AM", "endLabel": "9:00 AM", "papers": [], "starrable": true}, {"id": "sa_reg", "day": "sat", "kind": "event", "code": null, "title": "Registration Desk", "room": "South Pre-Function", "chair": null, "note": null, "start": "07:30", "end": "13:00", "startMin": 450, "endMin": 780, "startLabel": "7:30 AM", "endLabel": "1:00 PM", "papers": [], "starrable": false}, {"id": "s31", "day": "sat", "kind": "session", "code": "3.1", "title": "Entertainment Marketing: Fans, Apps, and Creativity", "room": "Belle Meade A", "chair": "Laura Boman, Kennesaw State University", "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [{"t": "From Awareness to Attraction: How Communication Accommodation Strategies Shape Fan Attitude Formation Among Costa Rican Satellite Soccer Fans", "a": [{"n": "Blake M. Andres", "af": "Samford University", "e": "bandres@samford.edu"}, {"n": "Darin W. White", "af": "Samford University", "e": "dwhite1@samford.edu"}, {"n": "Marshal Smith", "af": "Samford University", "e": "msmith60@samford.edu"}], "sub": "1914"}, {"t": "Constructing Hyperreality on Sports Betting Apps: Branded Entertainment as Simulacra", "a": [{"n": "Jonathan Bowman", "af": null, "e": "jmbowman@ualr.edu"}], "sub": "1905"}, {"t": "Put Down the Headphones: Silence Enhances Both the Quantity and the Quality of New Product Ideas", "a": [{"n": "Victoria Passyn", "af": "Academic Magnet High School", "e": "toriassyn@gmail.com"}, {"n": "Kirsten Passyn", "af": "The Citadel", "e": "kpassyn@citadel.edu"}], "sub": "1892"}], "starrable": true}, {"id": "s32", "day": "sat", "kind": "session", "code": "3.2", "title": "Student Session: Issues in Consumption", "room": "Belle Meade B", "chair": "Jon Littlefield, Dalton State College", "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [{"t": "When Saying No Leads to Walking Away: Self-Justification and Avoidance in Charitable Giving", "a": [{"n": "Aaliyah W. Wilkerson", "af": "Kennesaw State University", "e": "awilke36@students.kennesaw.edu"}], "sub": "1923"}, {"t": "Emotion That Converts: Testing Urgency, Positive Framing, and Storytelling in Animal Rescue Marketing", "a": [{"n": "Kenley Lanier", "af": "Jacksonville State University", "e": "kenleylanier@gmail.com"}, {"n": "Alexis LeBlanc", "af": "Jacksonville State University", "e": "aleblanc@stu.jsu.edu"}, {"n": "Mark Sciuchetti", "af": "Jacksonville State University", "e": "msciuchetti@jsu.edu"}], "sub": "1898"}, {"t": "Blind Box Appeal in Western Markets: Exploring the Factors Behind Consumer Purchases", "a": [{"n": "Rachelle Laurel", "af": "Middle Tennessee State University", "e": "rbl2x@mtmail.mtsu.edu"}, {"n": "Diane R. Edmondson", "af": "Middle Tennessee State University", "e": "diane.edmondson@mtsu.edu"}], "sub": "1874"}], "starrable": true}, {"id": "s33", "day": "sat", "kind": "session", "code": "3.3", "title": "Consumer Behavior: Judgments, Norms, and Attributions", "room": "Charlotte", "chair": "Terry Damron, Austin Peay State University", "note": null, "start": "08:00", "end": "09:30", "startMin": 480, "endMin": 570, "startLabel": "8:00 AM", "endLabel": "9:30 AM", "papers": [{"t": "Workplace Appearance Norms and the Shame of Baldness: Implications for Consumer Behavior", "a": [{"n": "Shiyun Chen", "af": null, "e": "chens@apsu.edu"}, {"n": "Achira Sedari Mudiyanselage", "af": "Austin Peay State University", "e": "sedarimudiyanselagea@apsu.edu"}, {"n": "Terry Damron", "af": "Austin Peay State University", "e": "damront@apsu.edu"}, {"n": "Jaycie Luster", "af": "Austin Peay State University", "e": null}], "sub": "1916"}, {"t": "Consumers’ Category Structure and Its Implications for Change", "a": [{"n": "Chris Joiner", "af": "George Mason University", "e": "cjoiner@gmu.edu"}], "sub": "1927"}, {"t": "When Consumers Use Apples to Judge Oranges: How Frequency Information About Missing Product Attributes Biases Consumer Choice", "a": [{"n": "Rui Chen", "af": null, "e": "araychen@tarleton.edu"}, {"n": "Ceyhan Ck Kilic", "af": "Tarleton State University", "e": null}], "sub": "1881"}, {"t": "Is AI (Failure) Here to Stay? An Examination of Stability Attributions, Customer Responses, and Repurchase Intentions", "a": [{"n": "Adrien Maught", "af": "Nicholls State University", "e": "adrien.maught@nicholls.edu"}, {"n": "En Mao", "af": "Nicholls State University", "e": "en.mao@nicholls.edu"}, {"n": "Kaitlin Gravois", "af": "Louisiana State University", "e": "kaitlingravois@gmail.com"}], "sub": "1919"}], "starrable": true}, {"id": "s34", "day": "sat", "kind": "session", "code": "3.4", "title": "AI, Career Readiness, and Emerging Educational Innovations", "room": "Belle Meade A", "chair": "Bill Bergman, University of Richmond", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "From Classroom to Career: Building AI-Enabled, Employer-Validated Career Readiness Through an Unlikely Academic-Finance Partnership", "a": [{"n": "Timothy L. Schauer", "af": "University of Lynchburg", "e": "schauer_tl@lynchburg.edu"}, {"n": "Price Jett", "af": "University of Lynchburg", "e": "jett_pl@lynchburg.edu"}], "sub": "1911"}, {"t": "From Institutional Messaging to Student-Led Storytelling: Transforming A Business School’s Social Media Performance Through An Experiential Digital Marketing Practicum", "a": [{"n": "Bill Bergman", "af": "University of Richmond", "e": "bbergman@richmond.edu"}, {"n": "Raika Sadeghein", "af": "University of Richmond", "e": "rsadeghe@richmond.edu"}], "sub": "1884"}, {"t": "Implementing Flexible One-Credit Models to Enhance Student Academic and Professional Development", "a": [{"n": "L. Kevin Levine", "af": "Marshall University", "e": "Levine2@marshall.edu"}, {"n": "Elizabeth Alexander", "af": "Marshall University", "e": "alexanec@marshall.edu"}], "sub": "1901"}], "starrable": true}, {"id": "s35", "day": "sat", "kind": "session", "code": "3.5", "title": "Student Session: Media, Markets, and Careers", "room": "Belle Meade B", "chair": "Jon Littlefield, Dalton State College", "note": null, "start": "09:45", "end": "11:15", "startMin": 585, "endMin": 675, "startLabel": "9:45 AM", "endLabel": "11:15 AM", "papers": [{"t": "Platform Content and Persuasion Knowledge Activation: Streaming and Short-Form Content’s Role in Consumer Resistance to Product Placement", "a": [{"n": "Delaney D. Whiddon", "af": "Jacksonville State University", "e": "dwhiddon@stu.jsu.edu"}, {"n": "Mark J. Sciuchetti", "af": "Jacksonville State University", "e": "msciuchetti@jsu.edu"}, {"n": "Jianping Huang", "af": "Jacksonville State University", "e": "jhuang@jsu.edu"}], "sub": "1893"}, {"t": "Marketing the Pilot Shortage: Signaling Asymmetry and Funnel Disequilibrium in U.S. Aviation Training Markets", "a": [{"n": "Scott Peters", "af": "Embry-Riddle Aeronautical University", "e": "scott.peters@outlook.com"}, {"n": "Jordan Baus", "af": "Embry-Riddle Aeronautical University", "e": "Jordanbaus@gmail.com"}], "sub": "1891"}, {"t": "It Takes a Village? Manuscript Socialization and Publication Prestige", "a": [{"n": "Matthew Farrell", "af": "Austin Peay State University", "e": "farrellm@apsu.edu"}, {"n": "Kennedy Hammond", "af": null, "e": null}, {"n": "Reid Owens", "af": null, "e": null}, {"n": "Cadence Logue", "af": null, "e": null}, {"n": "Alezandra Cervera", "af": null, "e": null}], "sub": "1908"}], "starrable": true}], "welcome": ["Welcome to the 2026 Atlantic Marketing Association (AtMA) conference! We are delighted to gather for our 51st annual meeting in Nashville, Tennessee, the heart of Music City, continuing our enduring commitment to providing a collegial, supportive space for sharing ideas, developing collaborations, and building friendships.", "Over the coming days, you will find ample opportunities to explore a wide array of ideas presented across 18 unique sessions. I encourage you to attend and actively participate in as many as you can, growing your own research agenda and helping others further develop theirs.", "As you plan your schedule, please know that we will kick things off Thursday morning with a welcome breakfast designed for networking and connecting with fellow attendees. Each morning, a complimentary breakfast buffet will be available at 7:30 AM. In the evenings, a hospitality suite will be open from 7:00 to 10:00 PM, offering a relaxed space to unwind and connect. On Friday, we will celebrate award winning research and honor the individuals who make this conference possible during our annual awards luncheon. Afterwards, we will enjoy a tour of the historic Ryman Auditorium!", "Heartfelt thanks to our track chairs, reviewers, session chairs, and the AtMA Board of Directors for their ongoing guidance and behind the scenes support.", "May you find the coming days a source of inspiration and new connections."], "reminders": [{"k": "Hotel", "v": "Drury Plaza Hotel Nashville Downtown, 300 Korean Veterans Blvd. An easy two block walk to Broadway, with quick access to the Bridgestone Arena, the Country Music Hall of Fame, and the Ryman Auditorium."}, {"k": "Meeting rooms", "v": "All sessions occur in the Belle Meade A, Belle Meade B, and Charlotte rooms. See each session listing for its room assignment."}, {"k": "Daily breakfast", "v": "Complimentary buffet breakfast each morning of the conference, Thursday through Saturday, 7:30 to 9:00 AM."}, {"k": "Hospitality suite", "v": "Granny White Boardroom, 7:00 to 10:00 PM on Wednesday, Thursday, and Friday nights, with complimentary snacks, beer, and wine. Arriving Wednesday? Come by and connect with conference participants."}, {"k": "Awards luncheon", "v": "Friday, 1:00 to 2:00 PM in Guest Dining, followed by a tour of the historic Ryman Auditorium. Outstanding track submissions, student work, and conference best papers are recognized."}, {"k": "Board meeting", "v": "The 2026 AtMA Board of Directors meets 8:00 to 9:30 AM on Friday in the Old Hickory room."}], "board": [{"role": "President", "who": "Dr. Kirsten Passyn, The Citadel"}, {"role": "Program Chair and President Elect", "who": "Dr. Jianping (Coco) Huang, Jacksonville State University"}, {"role": "Executive Director", "who": "Dr. Brian R. Kinard, University of North Carolina Wilmington"}, {"role": "Associate Executive Director", "who": "Dr. Terry Damron, Austin Peay State University"}, {"role": "Proceedings Editor", "who": "Ms. Dayna Reed, Kennesaw State University"}, {"role": "Webmaster", "who": "Dr. Mark Sciuchetti, Jacksonville State University"}, {"role": "Conference Registration", "who": "Dr. Brian R. Kinard, University of North Carolina Wilmington"}, {"role": "Board Members", "who": "Dr. Liz Alexander, Marshall University; Dr. Ismet Anitsal, Missouri State University; Dr. M. Meral Anitsal, Tennessee Tech University; Dr. Joseph Cangelosi, University of Central Arkansas; Dr. Diane R. Edmondson, Middle Tennessee State University; Dr. Jon Littlefield, Dalton State College; Dr. George W. Stone, North Carolina A&T State University; Dr. Blaise Waguespack, Embry-Riddle Aeronautical University"}], "trackChairs": [{"track": "Advertising, Digital Marketing and Promotion", "who": "Ms. Michelle Carpenter, Old Dominion University"}, {"track": "AI Marketing, Technology and Geomarketing", "who": "Dr. Mark Sciuchetti, Jacksonville State University"}, {"track": "Consumer Behavior", "who": "Dr. Terry Damron, Austin Peay State University"}, {"track": "Entertainment: Music, Arts and Sports", "who": "Dr. Laura Boman, Kennesaw State University"}, {"track": "Marketing Education and Experiential Learning", "who": "Dr. Kirsten Passyn, The Citadel"}, {"track": "Marketing Strategy, Research and Analytics", "who": "Dr. Emory Hiott, Charleston Southern University"}, {"track": "Professional Sales and Sales Management", "who": "Dr. Ismet Anitsal (Co-Chair), Missouri State University, and Dr. M. Meral Anitsal (Co-Chair), Tennessee Tech University"}, {"track": "Services Marketing and Retailing", "who": "Dr. Marko Grünhagen, Eastern Illinois University"}, {"track": "Social Media Marketing", "who": "Dr. Laura Boman, Kennesaw State University"}, {"track": "Student Submissions", "who": "Dr. Jon Littlefield, Dalton State College"}], "rooms": [{"name": "Belle Meade A", "use": "Sessions 1.1, 1.4, 2.1, 2.3, 2.5, 3.1, and 3.4"}, {"name": "Belle Meade B", "use": "Sessions 1.2, 1.5, 2.2, 2.4, 2.6, 3.2, and 3.5"}, {"name": "Charlotte", "use": "Sessions 1.3, 1.6, 2.7, and 3.3"}, {"name": "South Pre-Function", "use": "Registration desk, 7:30 AM to 1:00 PM Thursday through Saturday, and Wednesday 3:00 to 5:00 PM"}, {"name": "Granny White Boardroom", "use": "Hospitality Suite, 7:00 to 10:00 PM Wednesday through Friday"}, {"name": "Old Hickory", "use": "AtMA Board of Directors meeting, Friday 8:00 to 9:30 AM"}, {"name": "Guest Dining", "use": "Awards Luncheon, Friday 1:00 to 2:00 PM"}], "reviewers": {"list": ["Adrien Maught, Nicholls State University", "Bill Bergman, University of Richmond", "Bryan S. Pulliam, Eastern Illinois University", "Ceyhan “C.K.” Kilic, Tarleton State University", "Chris Joiner, George Mason University", "Darlene Greathouse, Eastern Illinois University", "David J. Boggs, Eastern Illinois University", "Dayna Reed, Kennesaw State University", "Dildar Hussain, ESC Rennes School of Business", "Elizabeth Alexander, Marshall University", "Emory Hiott, Charleston Southern University", "Feisal Murshed, Kutztown University of Pennsylvania", "George W. Stone, North Carolina A&T State University", "Jasmina Dlacic, University of Rijeka", "Jianping Huang, Jacksonville State University", "Kimberly R. McNeil, North Carolina A&T State University", "Kirsten Passyn, The Citadel", "Mark Borchert, Houghton College", "Mark Sciuchetti, Jacksonville State University", "Michelle Carpenter, Old Dominion University", "Monisha Gupta, Marshall University", "Nichole Hugo, Eastern Illinois University", "Paige Gardiner, Southern Utah University", "Roland Leak, North Carolina A&T State University", "Ronda Henderson, Middle Tennessee State University", "Sanjay Puligadda, Miami University - Oxford", "Shiyun Chen, Austin Peay State University", "Stephen Carlson, Piedmont University", "Terry Damron, Austin Peay State University", "Thomas Tanner, Commonwealth University - Bloomsburg", "Timothy Schauer, University of Lynchburg", "Vivek Madupu, Morehead State University", "Whitney Ginder, Georgia College & State University"], "note": "Reviewer lists for the remaining tracks will be added upon receipt."}, "pois": [{"name": "Country Music Hall of Fame and Museum", "cat": "program", "lat": 36.1582632, "lng": -86.7761258, "pid": "ChIJS2U0MVxmZIgRZw7MYMgQuKU", "addr": "222 Rep. John Lewis Way S, Nashville, TN 37203", "blurb": "The story of country music, two blocks from the hotel on Rep. John Lewis Way.", "x": 166.5, "y": 200.7, "mi": 0.129}, {"name": "Bridgestone Arena", "cat": "program", "lat": 36.1591736, "lng": -86.7784959, "pid": "ChIJR2SNw15mZIgREmY_zX5TAKk", "addr": "501 Broadway, Nashville, TN 37203", "blurb": "Downtown arena at Fifth and Broadway, home ice of the Nashville Predators.", "x": 130.7, "y": 183.8, "mi": 0.274}, {"name": "Ryman Auditorium", "cat": "program", "lat": 36.1612481, "lng": -86.7784714, "pid": "ChIJletJO1lmZIgRq0UiSZV5AGM", "addr": "116 Rep. John Lewis Way N, Nashville, TN 37219", "blurb": "The Mother Church of Country Music, opened in 1892. The conference tour follows the Friday awards luncheon.", "x": 131.1, "y": 145.1, "mi": 0.351}, {"name": "Music City Center", "cat": "walk", "lat": 36.1577902, "lng": -86.7778496, "pid": "ChIJ28EdRF5mZIgRQFrZCMmHaq4", "addr": "201 Rep. John Lewis Way S, Nashville, TN 37203", "blurb": "Nashville's convention center, directly across from the Country Music Hall of Fame.", "x": 140.5, "y": 209.6, "mi": 0.22}, {"name": "Johnny Cash Museum", "cat": "walk", "lat": 36.1609385, "lng": -86.7757571, "pid": "ChIJVVVVVYVvZIgR9SLLnlliRbA", "addr": "119 3rd Ave S, Nashville, TN 37201", "blurb": "Museum devoted to the Man in Black, on Third Avenue South at the edge of the honky-tonk district.", "x": 172.0, "y": 150.9, "mi": 0.242}, {"name": "National Museum of African American Music", "cat": "walk", "lat": 36.1605526, "lng": -86.7789338, "pid": "ChIJKS-GfklnZIgR7COi4RO7Ycc", "addr": "510 Broadway, Nashville, TN 37203", "blurb": "Museum preserving and celebrating the music genres created, influenced, and inspired by African Americans, at Fifth and Broadway.", "x": 116.1, "y": 164.1, "mi": 0.341}, {"name": "Printers Alley", "cat": "walk", "lat": 36.1639761, "lng": -86.7783616, "pid": "ChIJrVjVyFlmZIgRx2ogsGKMIJo", "addr": "Printers Alley, Nashville, TN", "blurb": "Historic alley of clubs and late night music between Third and Fourth Avenues.", "x": 132.8, "y": 94.2, "mi": 0.496}, {"name": "Frist Art Museum", "cat": "walk", "lat": 36.1578972, "lng": -86.7838528, "pid": "ChIJEQk8r_VmZIgRm35FEOeHM-c", "addr": "919 Broadway, Nashville, TN 37203", "blurb": "Art museum inside Nashville's landmark Art Deco former post office on Broadway.", "x": 50.0, "y": 207.6, "mi": 0.556}, {"name": "Nissan Stadium", "cat": "walk", "lat": 36.1664706, "lng": -86.7713026, "pid": "ChIJl0G_5E9mZIgR6ZSYZkm8xfk", "addr": "1 Titans Way, Nashville, TN 37213", "blurb": "Home of the NFL Tennessee Titans on the East Bank of the Cumberland River.", "x": 239.2, "y": 47.7, "mi": 0.618}], "geo": {"scale": 270.0, "broadway": {"x1": 40.3, "y1": 210.4, "x2": 239.8, "y2": 151.6, "lx": 74.2, "ly": 193.4, "rot": -16.4}}, "hotel": {"name": "Drury Plaza Hotel Nashville Downtown", "lat": 36.1577667, "lng": -86.7739029, "addr": "300 Korean Veterans Blvd, Nashville, TN 37201", "pid": "ChIJU96N-1xmZIgR2j2AgAhG1Co"}};
+
+/* ---------------- storage adapter ----------------
+   Inside Claude, favorites persist through Claude's artifact storage.
+   When this file is hosted on a regular website, favorites persist in
+   the visitor's own browser storage. If neither is available, favorites
+   last for the current visit only. */
+const MEM = {};
+const hasClaudeStore = (typeof window !== "undefined") && window.storage && (typeof window.storage.get === "function");
+async function kvGet(key){
+  if (hasClaudeStore){
+    try { const r = await window.storage.get(key, false); return r ? r.value : null; }
+    catch(e){ return null; }
+  }
+  try { return window.localStorage.getItem(key); }
+  catch(e){ return (key in MEM) ? MEM[key] : null; }
+}
+async function kvSet(key, val){
+  if (hasClaudeStore){
+    try { await window.storage.set(key, val, false); } catch(e){}
+    return;
+  }
+  try { window.localStorage.setItem(key, val); }
+  catch(e){ MEM[key] = val; }
+}
+
+/* ---------------- state ---------------- */
+const state = {
+  tab: "program",
+  day: "thu",
+  q: "",
+  room: "all",
+  stars: new Set(),
+  open: new Set(),
+  poi: null
+};
+
+const ROOMCLASS = { "Belle Meade A":"rA", "Belle Meade B":"rB", "Charlotte":"rC" };
+const ROOMCOLOR = { "rA":"var(--blue)", "rB":"var(--teal)", "rC":"var(--gold)", "":"var(--grey)" };
+
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function byId(id){ return document.getElementById(id); }
+function fmtRange(s){ return s.startLabel + " to " + s.endLabel; }
+function sessionsOf(dayId){ return DATA.sessions.filter(function(s){ return s.day === dayId; }); }
+function findSession(id){ return DATA.sessions.find(function(s){ return s.id === id; }); }
+
+/* Conference clock: highlights the current session while the meeting runs. */
+function todayId(){
+  const now = new Date();
+  const stamp = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0") + "-" + String(now.getDate()).padStart(2,"0");
+  const d = DATA.days.find(function(x){ return x.date === stamp; });
+  return d ? d.id : null;
+}
+function isNow(s){
+  const t = todayId();
+  if (t !== s.day) return false;
+  const now = new Date();
+  const m = now.getHours()*60 + now.getMinutes();
+  return m >= s.startMin && m < s.endMin;
+}
+
+/* ---------------- program rendering ---------------- */
+function renderDayTabs(){
+  const host = byId("dayTabs");
+  host.innerHTML = DATA.days.map(function(d){
+    return '<button class="daytab' + (state.day===d.id?" on":"") + '" role="tab" aria-selected="' + (state.day===d.id) + '" data-day="' + d.id + '">' +
+      '<span class="d">' + esc(d.short) + '</span><span class="n">' + esc(d.num) + '</span></button>';
+  }).join("");
+  host.querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click", function(){
+      state.day = b.getAttribute("data-day");
+      state.q = ""; byId("q").value = "";
+      renderDayTabs(); renderProgramList();
+    });
+  });
+}
+function renderRoomChips(){
+  const host = byId("roomChips");
+  const rooms = [
+    {id:"all", label:"All rooms", cls:"all"},
+    {id:"Belle Meade A", label:"Belle Meade A", cls:"rA"},
+    {id:"Belle Meade B", label:"Belle Meade B", cls:"rB"},
+    {id:"Charlotte", label:"Charlotte", cls:"rC"}
+  ];
+  host.innerHTML = rooms.map(function(r){
+    return '<button class="chip ' + r.cls + (state.room===r.id?" on":"") + '" data-room="' + esc(r.id) + '">' + esc(r.label) + '</button>';
+  }).join("");
+  host.querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click", function(){
+      state.room = b.getAttribute("data-room");
+      renderRoomChips(); renderProgramList();
+    });
+  });
+}
+function matches(s, q){
+  if (!q) return true;
+  const hay = [s.code||"", s.title, s.room||"", (s.chair||"")].concat(
+    (s.papers||[]).map(function(p){
+      return p.t + " " + p.a.map(function(a){ return a.n + " " + (a.af||""); }).join(" ");
+    })
+  ).join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).every(function(w){ return hay.indexOf(w) !== -1; });
+}
+function cardHtml(s, showDay){
+  const cls = ROOMCLASS[s.room] || "";
+  const starred = state.stars.has(s.id);
+  const open = state.open.has(s.id);
+  const now = isNow(s);
+  let h = '<article class="card ' + cls + (s.kind==="event" ? " evt":"") + '" id="card-' + s.id + '">';
+  h += '<div class="toprow"><div style="flex:1">';
+  h += '<div class="code">' + (s.code ? '<span class="codechip">' + esc(s.code) + '</span>' : "") + esc(fmtRange(s)) + (now ? '<span class="nowtag">Now</span>' : "") + '</div>';
+  h += '<h3>' + esc(s.title) + '</h3>';
+  h += '<div class="meta">' + (s.room ? '<span class="room">' + esc(s.room) + '</span>' : "") +
+       (showDay ? ' &middot; ' + esc(DATA.days.find(function(d){return d.id===s.day;}).long) : "") + '</div>';
+  if (s.chair) h += '<div class="meta" style="margin-top:2px">Chair: ' + esc(s.chair) + '</div>';
+  if (s.note) h += '<div class="note" style="margin-top:5px">' + esc(s.note) + '</div>';
+  h += '</div>';
+  if (s.starrable !== false){
+    h += '<button class="star" data-star="' + s.id + '" aria-pressed="' + starred + '" aria-label="' +
+      (starred ? "Remove from my agenda: " : "Add to my agenda: ") + esc(s.title) + '">' + (starred ? "\u2605" : "\u2606") + '</button>';
+  }
+  h += '</div>';
+  if (s.papers && s.papers.length){
+    h += '<button class="expander" data-open="' + s.id + '" aria-expanded="' + open + '">' +
+         (open ? "Hide papers" : "Show " + s.papers.length + (s.papers.length===1?" paper":" papers")) + ' \u25BE</button>';
+    h += '<div class="papers' + (open?"":" hide") + '" id="papers-' + s.id + '">';
+    s.papers.forEach(function(p){
+      h += '<div class="paper"><div class="pt">' + esc(p.t) + '</div>';
+      h += '<div class="pa">' + p.a.map(function(a){
+        let line = esc(a.n) + (a.af ? ", " + esc(a.af) : "");
+        if (CONFIG.showEmails && a.e) line += " &middot; " + esc(a.e);
+        return line;
+      }).join("<br>") + '</div>';
+      if (p.sub) h += '<div class="ps">Submission ' + esc(p.sub) + '</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+  h += '</article>';
+  return h;
+}
+function wireCards(root){
+  root.querySelectorAll("[data-star]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const id = b.getAttribute("data-star");
+      if (state.stars.has(id)) state.stars.delete(id); else state.stars.add(id);
+      kvSet("atma26:stars", JSON.stringify(Array.from(state.stars)));
+      updateBadge();
+      const starred = state.stars.has(id);
+      b.setAttribute("aria-pressed", String(starred));
+      b.textContent = starred ? "\u2605" : "\u2606";
+      b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+      const s = findSession(id);
+      b.setAttribute("aria-label", (starred ? "Remove from my agenda: " : "Add to my agenda: ") + s.title);
+      if (state.tab === "agenda") renderAgenda();
+    });
+  });
+  root.querySelectorAll("[data-open]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const id = b.getAttribute("data-open");
+      const box = byId("papers-" + id);
+      const s = findSession(id);
+      if (state.open.has(id)){ state.open.delete(id); box.classList.add("hide"); b.setAttribute("aria-expanded","false");
+        b.innerHTML = "Show " + s.papers.length + (s.papers.length===1?" paper":" papers") + " \u25BE"; }
+      else { state.open.add(id); box.classList.remove("hide"); b.setAttribute("aria-expanded","true");
+        b.innerHTML = "Hide papers \u25BE"; }
+    });
+  });
+}
+function renderNowBanner(){
+  const host = byId("nowBanner");
+  if (!host) return;
+  const t = todayId();
+  if (!t){ host.innerHTML = ""; return; }
+  const dnow = new Date();
+  const m = dnow.getHours() * 60 + dnow.getMinutes();
+  const today = sessionsOf(t);
+  const cur = today.filter(function(s){ return s.kind === "session" && s.startMin <= m && m < s.endMin; });
+  const nxt = today.filter(function(s){ return s.kind === "session" && s.startMin > m; });
+  let h = "";
+  if (cur.length){
+    h = '<span class="nn-k">Now</span>Sessions ' + cur.map(function(s){ return esc(s.code); }).join(", ") + " until " + esc(cur[0].endLabel);
+  } else if (nxt.length){
+    const first = nxt[0].startMin;
+    const batch = nxt.filter(function(s){ return s.startMin === first; });
+    h = '<span class="nn-k">Next</span>Sessions ' + batch.map(function(s){ return esc(s.code); }).join(", ") + " at " + esc(batch[0].startLabel);
+  }
+  if (!h){ host.innerHTML = ""; return; }
+  host.innerHTML = '<div class="nownext" role="button" tabindex="0">' + h + ' \u00b7 tap to see today</div>';
+  const el = host.firstChild;
+  function go(){ state.day = t; renderDayTabs(); renderProgramList(); }
+  el.addEventListener("click", go);
+  el.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
+}
+
+function renderProgramList(){
+  const host = byId("programList");
+  if (!host) return;
+  let list, heading = "";
+  if (state.q.trim()){
+    list = DATA.sessions.filter(function(s){ return matches(s, state.q.trim()); });
+    heading = '<div class="dayhead">' + list.length + (list.length===1?" result":" results") + ' across all days</div>';
+  } else {
+    list = sessionsOf(state.day);
+    const d = DATA.days.find(function(x){ return x.id===state.day; });
+    heading = '<div class="dayhead">' + esc(d.long) + '</div>';
+  }
+  if (state.room !== "all"){
+    list = list.filter(function(s){ return s.room === state.room || s.kind !== "session"; });
+  }
+  let h = heading;
+  if (!list.length){
+    h += '<div class="empty">Nothing matches. Try another search term or filter.</div>';
+  } else {
+    let lastTime = null;
+    list.forEach(function(s){
+      const t = s.startLabel;
+      if (!state.q.trim() && t !== lastTime){
+        const bc = list.filter(function(x){ return x.startLabel === t && x.kind === "session"; }).length;
+        h += '<div class="timehead"><span class="t">' + esc(t) + '</span>' +
+             (bc ? '<span class="c">' + bc + (bc === 1 ? ' session' : ' sessions') + '</span>' : '') +
+             '<span class="l"></span></div>';
+        lastTime = t;
+      }
+      h += cardHtml(s, !!state.q.trim());
+    });
+  }
+  host.innerHTML = h;
+  wireCards(host);
+}
+function renderProgram(){
+  byId("programControls").classList.remove("hide");
+  byId("view").innerHTML = '<div id="nowBanner"></div><div id="programList"></div>';
+  renderDayTabs(); renderRoomChips(); renderNowBanner(); renderProgramList();
+}
+
+/* ---------------- my agenda ---------------- */
+function renderAgenda(){
+  byId("programControls").classList.add("hide");
+  const starred = DATA.sessions.filter(function(s){ return state.stars.has(s.id); });
+  let h = '<div class="sec"><h2>My Agenda</h2>';
+  if (!starred.length){
+    h += '<div class="empty">No sessions starred yet.<br>Tap the \u2606 on any session in the program to build your personal schedule.</div></div>';
+    byId("view").innerHTML = h;
+    return;
+  }
+  h += '<p class="note">Starred sessions are saved on this device and grouped by day.</p>';
+  DATA.days.forEach(function(d){
+    const todays = starred.filter(function(s){ return s.day === d.id; });
+    if (!todays.length) return;
+    h += '<div class="dayhead">' + esc(d.long) + '</div>';
+    todays.forEach(function(s){ h += cardHtml(s, false); });
+  });
+  h += '<div class="btnrow"><button class="btn" id="icsBtn">Add starred to calendar (.ics)</button></div>';
+  h += '<p class="note" style="margin-top:8px">The calendar file uses Nashville local times.</p></div>';
+  byId("view").innerHTML = h;
+  wireCards(byId("view"));
+  byId("icsBtn").addEventListener("click", downloadIcs);
+}
+function icsStamp(date, hm){
+  return date.replace(/-/g,"") + "T" + hm.replace(":","") + "00";
+}
+function downloadIcs(){
+  const starred = DATA.sessions.filter(function(s){ return state.stars.has(s.id); });
+  const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//AtMA//2026 Nashville//EN","CALSCALE:GREGORIAN"];
+  starred.forEach(function(s){
+    const d = DATA.days.find(function(x){ return x.id===s.day; });
+    lines.push("BEGIN:VEVENT");
+    lines.push("UID:atma2026-" + s.id + "@atlanticmarketingassociation.com");
+    lines.push("DTSTART:" + icsStamp(d.date, s.start));
+    lines.push("DTEND:" + icsStamp(d.date, s.end));
+    lines.push("SUMMARY:" + (s.code ? s.code + " " : "") + s.title.replace(/[,;]/g," "));
+    lines.push("LOCATION:" + (s.room ? s.room + " · " : "") + "Drury Plaza Hotel Nashville Downtown");
+    lines.push("END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  const text = lines.join("\r\n");
+  try {
+    const blob = new Blob([text], {type:"text/calendar"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "atma-2026-agenda.ics";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 400);
+  } catch(e){
+    window.prompt("Copy this calendar text and save it as atma-2026-agenda.ics", text);
+  }
+}
+
+/* ---------------- map ---------------- */
+function renderMap(){
+  byId("programControls").classList.add("hide");
+  let h = '<div class="sec"><h2>Around the Hotel</h2>';
+  h += '<p class="note">Numbered markers show landmarks near the Drury Plaza Hotel Nashville Downtown, 300 Korean Veterans Blvd. Tap a marker or a legend entry for details and one tap walking directions. Distances are straight line from the hotel.</p>';
+  h += '<div id="liveMapWrap" class="mapbox" style="padding:0;overflow:hidden;position:relative;z-index:1"><div id="liveMap"></div></div>';
+  h += '<div id="svgWrap" class="mapbox hide"><svg id="poiSvg" viewBox="0 0 400 420" role="img" aria-label="Schematic map of landmarks near the conference hotel"></svg></div>';
+  h += '<div id="mapNote"></div>';
+  h += '<ol class="legend" id="poiLegend"></ol>';
+  h += '<div id="poiDetail"></div>';
+  h += '</div>';
+
+  h += '<div class="sec roomguide"><h2>Inside the Hotel</h2>';
+  h += '<p class="note">All meeting rooms are inside the Drury Plaza Hotel. Hotel signage and the front desk can point the way.</p>';
+  DATA.rooms.forEach(function(r){
+    const cls = ROOMCLASS[r.name] || "";
+    h += '<div class="rg"><div class="rn"><span class="dot" style="background:' + ROOMCOLOR[cls] + '"></span>' + esc(r.name) + '</div>' +
+         '<div class="ru">' + esc(r.use) + '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<div class="sec"><h2>Conference GIS Layer</h2>';
+  if (CONFIG.arcgisEmbedUrl){
+    h += '<div class="mapbox" style="padding:0;overflow:hidden"><iframe src="' + esc(CONFIG.arcgisEmbedUrl) + '" style="width:100%;height:420px;border:0" title="ArcGIS map" loading="lazy" allowfullscreen></iframe></div>';
+    h += '<p class="note" style="margin-top:8px">Powered by ArcGIS Online.</p>';
+  } else {
+    h += '<p class="note">A curated ArcGIS Online map or StoryMap from the conference team can be embedded here. Paste the embed link into the app settings and it will appear in this space.</p>';
+  }
+  h += '</div>';
+  byId("view").innerHTML = h;
+  renderLegend();
+  initLiveMap();
+  selectPoi(state.poi, {scroll:false});
+}
+
+/* Live street map: Leaflet with the OpenStreetMap basemap. If the library or
+   the map tiles cannot load, for example fully offline, the built in schematic
+   view takes over automatically. */
+var LIVEMAP = null, LIVEMARKERS = [];
+function activateSchematic(reason){
+  if (LIVEMAP){ try{ LIVEMAP.remove(); }catch(e){} LIVEMAP = null; }
+  LIVEMARKERS = [];
+  var lw = byId("liveMapWrap"), sw = byId("svgWrap");
+  if (!lw || !sw) return;
+  lw.classList.add("hide");
+  sw.classList.remove("hide");
+  drawPoiSvg();
+  if (reason === "tiles" && byId("mapNote")){
+    byId("mapNote").innerHTML = '<p class="note" style="margin-top:8px">The street map could not load in this window, so the schematic view is shown. The hosted version of this page displays the full interactive street map.</p>';
+  }
+}
+function initLiveMap(){
+  LIVEMARKERS = [];
+  if (state.tab !== "map" || !byId("liveMap")) return;
+  if (typeof L === "undefined"){
+    if (document.readyState === "complete"){ activateSchematic("no-lib"); }
+    else { setTimeout(initLiveMap, 250); }
+    return;
+  }
+  if (LIVEMAP){ try{ LIVEMAP.remove(); }catch(e){} LIVEMAP = null; }
+  try{
+    LIVEMAP = L.map("liveMap", { scrollWheelZoom: true });
+    var loaded = 0, failed = 0;
+    var tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+    });
+    tiles.on("tileload", function(){ loaded++; });
+    tiles.on("tileerror", function(){ failed++; });
+    setTimeout(function(){ if (loaded === 0 && failed > 0) activateSchematic("tiles"); }, 4000);
+    tiles.addTo(LIVEMAP);
+    var hotel = DATA.hotel;
+    var star = L.divIcon({ className: "", html: '<div class="lm-star">\u2605</div>', iconSize: [30,30], iconAnchor: [15,15] });
+    L.marker([hotel.lat, hotel.lng], { icon: star, title: hotel.name, zIndexOffset: 500 })
+      .addTo(LIVEMAP)
+      .bindPopup('<strong>' + esc(hotel.name) + '</strong><br>Conference venue \u00b7 300 Korean Veterans Blvd');
+    var pts = [[hotel.lat, hotel.lng]];
+    DATA.pois.forEach(function(p, i){
+      var col = p.cat === "program" ? "#2E77AC" : "#1F8A7D";
+      var icon = L.divIcon({ className: "", html: '<div class="lm-pin" style="background:' + col + '">' + (i+1) + '</div>', iconSize: [26,26], iconAnchor: [13,13] });
+      var mk = L.marker([p.lat, p.lng], { icon: icon, title: p.name }).addTo(LIVEMAP);
+      mk.bindPopup('<strong>' + esc(p.name) + '</strong><br>' + p.mi.toFixed(2) + ' mi from the hotel');
+      mk.on("click", function(){ selectPoi(i, {scroll:false}); });
+      LIVEMARKERS.push(mk);
+      pts.push([p.lat, p.lng]);
+    });
+    LIVEMAP.fitBounds(L.latLngBounds(pts).pad(0.12));
+  } catch(e){
+    activateSchematic("tiles");
+  }
+}
+
+function drawPoiSvg(){
+  const svg = byId("poiSvg");
+  const G = DATA.geo;
+  const cx = 200, cy = 210;
+  let s = "";
+  /* rings */
+  [0.25, 0.5].forEach(function(mi){
+    const r = mi * G.scale;
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#C6D4E0" stroke-width="1" stroke-dasharray="3 4"/>';
+    s += '<text x="' + cx + '" y="' + (cy - r - 4) + '" text-anchor="middle" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-size="9.5" letter-spacing="1.5" fill="#8CA0B2">' + (mi===0.25 ? "1/4 MI" : "1/2 MI") + '</text>';
+  });
+  /* Broadway alignment between two verified addresses on Broadway */
+  if (G.broadway){
+    s += '<line x1="' + G.broadway.x1 + '" y1="' + G.broadway.y1 + '" x2="' + G.broadway.x2 + '" y2="' + G.broadway.y2 + '" stroke="#8CA0B2" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.6"/>';
+    s += '<text x="' + G.broadway.lx + '" y="' + G.broadway.ly + '" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-size="10.5" letter-spacing="2.5" fill="#5A6B7C" transform="rotate(' + G.broadway.rot + ' ' + G.broadway.lx + ' ' + G.broadway.ly + ')">BROADWAY</text>';
+  }
+  /* north arrow */
+  s += '<g transform="translate(372,26)"><path d="M0 10 L0 -8" stroke="#1E4468" stroke-width="1.6"/><path d="M-4 -3 L0 -10 L4 -3" fill="#1E4468"/><text x="0" y="24" text-anchor="middle" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-size="10" letter-spacing="1" fill="#1E4468">N</text></g>';
+  /* scale bar */
+  const sb = 0.25 * G.scale;
+  s += '<g transform="translate(18,400)"><line x1="0" y1="0" x2="' + sb + '" y2="0" stroke="#1E4468" stroke-width="2"/><line x1="0" y1="-4" x2="0" y2="4" stroke="#1E4468" stroke-width="2"/><line x1="' + sb + '" y1="-4" x2="' + sb + '" y2="4" stroke="#1E4468" stroke-width="2"/><text x="' + (sb/2) + '" y="-7" text-anchor="middle" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-size="9.5" letter-spacing="1.5" fill="#1E4468">1/4 MILE</text></g>';
+  /* hotel */
+  s += '<g><path transform="translate(' + cx + ',' + cy + ') scale(1.15)" d="M0 -9 L2.4 -2.8 L9 -2.8 L3.6 1.4 L5.6 8 L0 4.2 L-5.6 8 L-3.6 1.4 L-9 -2.8 L-2.4 -2.8 Z" fill="#F2B234" stroke="#1E4468" stroke-width="1.4"/>';
+  s += '<text x="' + cx + '" y="' + (cy + 24) + '" text-anchor="middle" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-weight="700" font-size="11" letter-spacing="1.5" fill="#1E4468">DRURY PLAZA</text></g>';
+  /* pois */
+  DATA.pois.forEach(function(p, i){
+    const col = p.cat === "program" ? "#2E77AC" : "#1F8A7D";
+    s += '<g class="poi-dot" data-poi="' + i + '" role="button" tabindex="0" aria-label="' + esc(p.name) + '">' +
+      '<circle class="halo" cx="' + p.x + '" cy="' + p.y + '" r="15"/>' +
+      '<circle class="core" cx="' + p.x + '" cy="' + p.y + '" r="9.5" fill="' + col + '" stroke="#FFFFFF" stroke-width="1.5"/>' +
+      '<text x="' + p.x + '" y="' + (p.y + 3.6) + '" text-anchor="middle" font-family="Libre Franklin, Segoe UI, Arial, sans-serif" font-weight="700" font-size="10.5" fill="#fff">' + (i+1) + '</text></g>';
+  });
+  svg.innerHTML = s;
+  svg.querySelectorAll(".poi-dot").forEach(function(g){
+    const idx = Number(g.getAttribute("data-poi"));
+    g.addEventListener("click", function(){ selectPoi(idx); });
+    g.addEventListener("keydown", function(ev){ if (ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); selectPoi(idx); } });
+  });
+}
+function renderLegend(){
+  const host = byId("poiLegend");
+  host.innerHTML = DATA.pois.map(function(p, i){
+    const col = p.cat === "program" ? "#2E77AC" : "#1F8A7D";
+    return '<li data-poi="' + i + '"><span class="num" style="background:' + col + '">' + (i+1) + '</span>' +
+      '<span class="nm">' + esc(p.name) + '</span><span class="ds">' + p.mi.toFixed(2) + ' mi</span></li>';
+  }).join("");
+  host.querySelectorAll("li").forEach(function(li){
+    li.addEventListener("click", function(){ selectPoi(Number(li.getAttribute("data-poi"))); });
+  });
+}
+function selectPoi(idx, opts){
+  const det = byId("poiDetail");
+  if (!det) return;
+  if (idx == null || !DATA.pois[idx]){ det.innerHTML = ""; return; }
+  state.poi = idx;
+  const p = DATA.pois[idx];
+  document.querySelectorAll(".poi-dot").forEach(function(g){
+    g.classList.toggle("sel", Number(g.getAttribute("data-poi")) === idx);
+  });
+  if (LIVEMAP && LIVEMARKERS[idx]){
+    LIVEMAP.panTo(LIVEMARKERS[idx].getLatLng());
+    LIVEMARKERS[idx].openPopup();
+  }
+  const g = "https://www.google.com/maps/dir/?api=1&destination=" + p.lat + "%2C" + p.lng +
+            (p.pid ? "&destination_place_id=" + encodeURIComponent(p.pid) : "") + "&travelmode=walking";
+  const a = "https://maps.apple.com/?daddr=" + p.lat + "%2C" + p.lng + "&dirflg=w";
+  det.innerHTML =
+    '<div class="poicard"><div class="cat">' + (p.cat === "program" ? "In the program" : "Worth the walk") + ' &middot; ' + p.mi.toFixed(2) + ' mi straight line</div>' +
+    '<h3>' + esc(p.name) + '</h3><p>' + esc(p.blurb) + '</p>' +
+    '<div class="btnrow"><a class="btn" href="' + g + '" target="_blank" rel="noopener">Walking directions \u00b7 Google</a>' +
+    '<a class="btn ghost" href="' + a + '" target="_blank" rel="noopener">Apple Maps</a></div></div>';
+  if (!(opts && opts.scroll === false) && det.scrollIntoView){
+    det.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+}
+
+/* ---------------- info + connect ---------------- */
+function renderInfo(){
+  byId("programControls").classList.add("hide");
+  let h = "";
+
+  h += '<div class="sec"><h2>Register</h2>';
+  h += '<p class="note">Conference registration runs through the Atlantic Marketing Association website.</p>';
+  h += '<div class="btnrow"><a class="btn" href="' + esc(CONFIG.registrationUrl) + '" target="_blank" rel="noopener">Conference registration</a>';
+  h += '<a class="btn ghost" href="' + esc(CONFIG.conferenceUrl) + '" target="_blank" rel="noopener">Conference details</a>';
+  if (CONFIG.googleFormUrl) h += '<a class="btn ghost" href="' + esc(CONFIG.googleFormUrl) + '" target="_blank" rel="noopener">RSVP form</a>';
+  h += '</div>';
+  h += '<div class="kv" style="margin-top:14px">';
+  h += '<div class="k">On site registration desk</div><div class="v">South Pre-Function area &middot; 7:30 AM to 1:00 PM Thursday through Saturday &middot; early registration Wednesday 3:00 to 5:00 PM &middot; late arrivals 7:00 to 10:00 PM in the Hospitality Suite</div>';
+  h += '</div></div>';
+
+  h += '<div class="sec"><h2>Connect</h2>';
+  if (CONFIG.chatLinks.length){
+    h += '<p class="note">Join the attendee conversation:</p><div class="btnrow">';
+    CONFIG.chatLinks.forEach(function(c){
+      h += '<a class="btn" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.label) + '</a>';
+    });
+    h += '</div>';
+  }
+  h += '<p class="note" style="margin-top:10px">Reach the conference team directly:</p><div class="kv">';
+  CONFIG.contacts.forEach(function(c){
+    h += '<div class="k">' + esc(c.role) + '</div><div class="v">' + esc(c.name) + ', ' + esc(c.org) +
+         ' &middot; <a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a></div>';
+  });
+  h += '</div>';
+  h += '<div id="boardHost"></div>';
+  h += '</div>';
+
+  h += '<div class="sec prose"><h2>Welcome from the Program Chair</h2>';
+  DATA.welcome.forEach(function(p){ h += '<p>' + esc(p) + '</p>'; });
+  h += '<p><strong>Jianping (Coco) Huang</strong><br><span class="note">2026 AtMA Program Chair</span></p></div>';
+
+  h += '<div class="sec"><h2>Good to Know</h2><div class="kv">';
+  DATA.reminders.forEach(function(r){
+    h += '<div class="k">' + esc(r.k) + '</div><div class="v">' + esc(r.v) + '</div>';
+  });
+  h += '</div></div>';
+
+  h += '<div class="sec"><h2>Board of Directors</h2><div class="kv">';
+  DATA.board.forEach(function(b){
+    h += '<div class="k">' + esc(b.role) + '</div><div class="v">' + esc(b.who) + '</div>';
+  });
+  h += '</div></div>';
+
+  h += '<div class="sec"><h2>Track Chairs</h2><div class="kv">';
+  DATA.trackChairs.forEach(function(t){
+    h += '<div class="k">' + esc(t.track) + '</div><div class="v">' + esc(t.who) + '</div>';
+  });
+  h += '</div></div>';
+
+  if (DATA.reviewers && DATA.reviewers.list && DATA.reviewers.list.length){
+    h += '<div class="sec"><h2>Reviewers</h2>';
+    h += '<p class="note" style="margin-bottom:8px">With thanks to the colleagues who reviewed this year\u0027s submissions.</p>';
+    h += '<p style="font-size:14px;line-height:1.55">' + DATA.reviewers.list.map(esc).join("; ") + '.</p>';
+    if (DATA.reviewers.note) h += '<p class="note" style="margin-top:8px;font-style:italic">' + esc(DATA.reviewers.note) + '</p>';
+    h += '</div>';
+  }
+
+  byId("view").innerHTML = h;
+  renderBoard();
+}
+
+/* Community board: available when the app runs inside Claude. */
+async function renderBoard(){
+  const host = byId("boardHost");
+  if (!host) return;
+  if (!hasClaudeStore){
+    if (!CONFIG.chatLinks.length){
+      host.innerHTML = '<p class="note" style="margin-top:12px">A group chat link for attendees can be added here by the conference team.</p>';
+    }
+    return;
+  }
+  host.innerHTML = '<div class="board" style="margin-top:16px">' +
+    '<h2 style="font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.14em;font-size:13px;margin-bottom:6px">Message Board</h2>' +
+    '<p class="note" style="margin-bottom:8px">Posts here are visible to everyone who opens this app. Keep it collegial.</p>' +
+    '<input id="bName" maxlength="40" placeholder="Your name" aria-label="Your name">' +
+    '<textarea id="bText" maxlength="400" placeholder="Share a note, a question, or a dinner plan" aria-label="Message"></textarea>' +
+    '<div class="btnrow" style="margin-top:0"><button class="btn" id="bPost">Post</button><button class="btn ghost" id="bRefresh">Refresh</button></div>' +
+    '<div id="bList" style="margin-top:12px"><p class="note">Loading messages...</p></div></div>';
+  byId("bPost").addEventListener("click", postBoard);
+  byId("bRefresh").addEventListener("click", loadBoard);
+  loadBoard();
+}
+async function loadBoard(){
+  const list = byId("bList");
+  if (!list) return;
+  try{
+    const r = await window.storage.list("atma26board:", true);
+    const keys = (r && r.keys) ? r.keys.slice() : [];
+    keys.sort(); keys.reverse();
+    const top = keys.slice(0, 50);
+    const vals = await Promise.all(top.map(function(k){
+      return window.storage.get(k, true).catch(function(){ return null; });
+    }));
+    const msgs = vals.filter(Boolean).map(function(v){
+      try { return JSON.parse(v.value); } catch(e){ return null; }
+    }).filter(Boolean);
+    if (!msgs.length){ list.innerHTML = '<p class="note">No posts yet. Start the conversation.</p>'; return; }
+    list.innerHTML = msgs.map(function(m){
+      const when = m.ts ? new Date(m.ts).toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}) : "";
+      return '<div class="msg"><span class="who">' + esc(m.n) + '</span><span class="when">' + esc(when) + '</span><div class="txt">' + esc(m.t) + '</div></div>';
+    }).join("");
+  } catch(e){
+    list.innerHTML = '<p class="note">The message board could not load right now.</p>';
+  }
+}
+async function postBoard(){
+  const nameEl = byId("bName"), textEl = byId("bText");
+  const n = nameEl.value.trim(), t = textEl.value.trim();
+  if (!n || !t){ alert("Please add your name and a message."); return; }
+  const ts = Date.now();
+  const key = "atma26board:" + ts + "-" + Math.floor(Math.random()*100000);
+  try{
+    await window.storage.set(key, JSON.stringify({n:n.slice(0,40), t:t.slice(0,400), ts:ts}), true);
+    textEl.value = "";
+    loadBoard();
+  } catch(e){
+    alert("The post could not be saved. Please try again.");
+  }
+}
+
+/* ---------------- navigation ---------------- */
+function updateBadge(){
+  const b = byId("agendaBadge");
+  const n = state.stars.size;
+  b.textContent = String(n);
+  b.classList.toggle("hide", n === 0);
+}
+function setTab(t){
+  state.tab = t;
+  ["program","agenda","map","info"].forEach(function(x){
+    byId("tab-" + x).classList.toggle("on", x === t);
+  });
+  if (t === "program") renderProgram();
+  else if (t === "agenda") renderAgenda();
+  else if (t === "map") renderMap();
+  else renderInfo();
+  window.scrollTo({top: t === "program" ? Math.min(window.scrollY, 0) : 0});
+  byId("view").focus({preventScroll:true});
+}
+
+async function init(){
+  try{
+    const raw = await kvGet("atma26:stars");
+    if (raw){ JSON.parse(raw).forEach(function(id){ state.stars.add(id); }); }
+  } catch(e){}
+  const t = todayId();
+  if (t && t !== "wed") state.day = t;
+  else if (t === "wed") state.day = "wed";
+  updateBadge();
+  byId("tab-program").addEventListener("click", function(){ setTab("program"); });
+  byId("tab-agenda").addEventListener("click", function(){ setTab("agenda"); });
+  byId("tab-map").addEventListener("click", function(){ setTab("map"); });
+  byId("tab-info").addEventListener("click", function(){ setTab("info"); });
+  byId("q").addEventListener("input", function(e){
+    state.q = e.target.value;
+    renderProgramList();
+  });
+  renderProgram();
+}
+init();
+</script>
+</body>
+</html>
