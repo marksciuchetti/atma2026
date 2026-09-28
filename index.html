@@ -215,6 +215,12 @@
     box-shadow:0 3px 10px rgba(15,42,71,.28);cursor:pointer;
   }
   .nn-k{background:var(--gold-bright);color:var(--navy);font-weight:800;font-size:10px;letter-spacing:.08em;border-radius:999px;padding:2px 9px;margin-right:8px;text-transform:uppercase;vertical-align:1px}
+  .votebanner{
+    display:block;background:linear-gradient(135deg,#FFC55C,var(--gold-bright));color:var(--navy);
+    border-radius:12px;padding:11px 14px;margin:12px 0 2px;font-family:var(--brand);font-weight:700;
+    font-size:13px;text-decoration:none;box-shadow:0 3px 10px rgba(154,110,16,.28);
+  }
+  .votebanner .vb-k{background:var(--navy);color:#fff;font-weight:800;font-size:10px;letter-spacing:.08em;border-radius:999px;padding:2px 9px;margin-right:8px;text-transform:uppercase;vertical-align:1px}
   @media (prefers-reduced-motion:no-preference){
     @keyframes starpop{0%{transform:scale(1)}45%{transform:scale(1.4) rotate(8deg)}100%{transform:scale(1)}}
     .star.pop{animation:starpop .32s ease}
@@ -689,7 +695,7 @@ function renderProgramList(){
 }
 function renderProgram(){
   byId("programControls").classList.remove("hide");
-  byId("view").innerHTML = '<div id="nowBanner"></div><div id="programList"></div>';
+  byId("view").innerHTML = '<a class="votebanner" href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=gRAMlmPQ-EGES0HXONsEo6WaZjDPDFhDr8uyeWXGVWhUNzNQVTJYTkxFUFFXUFA1UkdCMklYRTk4Ni4u" target="_blank" rel="noopener"><span class="vb-k">Vote</span>Best Presentation Award \u00b7 cast your one vote</a><div id="nowBanner"></div><div id="programList"></div>';
   renderDayTabs(); renderRoomChips(); renderNowBanner(); renderProgramList();
 }
 
@@ -1056,6 +1062,11 @@ function renderInfo(){
          (r.url ? ' <a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.urlLabel || 'View the menu') + '</a>' : '') + '</div>';
   });
   h += '</div></div>';
+
+  h += '<div class="sec"><h2>Best Presentation Award</h2>';
+  h += '<p class="note">Vote for the single best presentation, not session, that you attended during the conference. Please do not vote for your own session or simply to support a colleague, but for the genuinely best presentation you attended. Presentations are identified by session number, the start of the title, and first author only, and each attendee may vote once. The form does not collect your name or email address unless you choose to provide it.</p>';
+  h += '<div class="btnrow" style="margin:4px 0 2px"><a class="btn" href="https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=gRAMlmPQ-EGES0HXONsEo6WaZjDPDFhDr8uyeWXGVWhUNzNQVTJYTkxFUFFXUFA1UkdCMklYRTk4Ni4u" target="_blank" rel="noopener">Cast your vote</a></div>';
+  h += '</div>';
 
   h += '<div class="sec"><h2>2026 Conference Sponsors</h2>';
   h += '<p class="note">With grateful appreciation to the sponsors of the 51st Annual Conference.</p>';
